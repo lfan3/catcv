@@ -2,10 +2,13 @@
 <html>
   <head>
     <title>CV</title>
+    <meta charset="UTF-8" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   </head>
   <body style="height: 100vh; width: 100vw">
-    <embed
-      src="LinlinFanResume_fs_fr.pdf"
+    <div class="pdf-container" id="pdfContainer"></div>
+    <!-- <embed
+      src="catcv.pdf"
       style="
         position: absolute;
         left: 0;
@@ -15,6 +18,38 @@
         width: 100%;
         height: 100%;
       "
-    />
+    /> -->
   </body>
 </html>
+
+<script>
+  async function decryptPDF() {
+    const pass = "password";
+    const pdfContainer = document.getElementById("pdfContainer");
+    const response = await fetch("catcv_encry");
+    console.log("response", response);
+    const encrypted_data = response.text();
+    const decrypted_data = CryptoJS.AES.decrypt(encrypted_data, pass);
+    const pdfData = decrypted_data.toString(CryptoJS.enc.Utf8);
+
+    const blob = new Blob([pdfData], { type: "application/pdf" });
+    const pdf_url = URL.createObjectURL(blob);
+    pdfContainer.innerHTML = `
+                    <embed
+                        id="pdfViewer"
+                        src="${currentPdfUrl}"
+                        type="application/pdf"
+                        style="
+                          position: absolute;
+                          left: 0;
+                          right: 0;
+                          top: 0;
+                          bottom: 0;
+                          width: 100%;
+                          height: 100%;
+                        "
+                    />
+                `;
+  }
+  decryptPDF();
+</script>
