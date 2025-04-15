@@ -6,6 +6,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   </head>
   <body style="height: 100vh; width: 100vw">
+    <div id="loading" class="loading">Loading PDF...</div>
     <div class="pdf-container" id="pdfContainer"></div>
     <!-- <embed
       src="catcv.pdf"
@@ -26,15 +27,18 @@
   async function decryptPDF() {
     const pass = "password";
     const pdfContainer = document.getElementById("pdfContainer");
-    const response = await fetch("catcv_encry.pdf");
-    console.log("response", response);
-    const encrypted_data = response.text();
-    const decrypted_data = CryptoJS.AES.decrypt(encrypted_data, pass);
-    const pdfData = decrypted_data.toString(CryptoJS.enc.Utf8);
+    const loadingDiv = document.getElementById("loading");
+    loadingDiv.style.display = "block";
+    try {
+      const response = await fetch("catcv_encry.pdf");
+      console.log("response", response);
+      const encrypted_data = response.text();
+      const decrypted_data = CryptoJS.AES.decrypt(encrypted_data, pass);
+      const pdfData = decrypted_data.toString(CryptoJS.enc.Utf8);
 
-    const blob = new Blob([pdfData], { type: "application/pdf" });
-    const pdf_url = URL.createObjectURL(blob);
-    pdfContainer.innerHTML = `
+      const blob = new Blob([pdfData], { type: "application/pdf" });
+      const pdf_url = URL.createObjectURL(blob);
+      pdfContainer.innerHTML = `
                     <embed
                         id="pdfViewer"
                         src="${pdf_url}"
@@ -50,6 +54,13 @@
                         "
                     />
                 `;
+    } catch (error) {
+      console.error("Decryption error:", error);
+      showError(error.message || "Invalid password or corrupted file");
+    } finally {
+      loadingDiv.style.display = "none";
+    }
   }
+
   decryptPDF();
 </script>
