@@ -26,7 +26,7 @@
   async function decryptPDF() {
     const pass = "password";
     const pdfContainer = document.getElementById("pdfContainer");
-    const response = await fetch("catcv_encry");
+    const response = await fetch("catcv_encry.pdf");
     console.log("response", response);
     const encrypted_data = response.text();
     const decrypted_data = CryptoJS.AES.decrypt(encrypted_data, pass);
