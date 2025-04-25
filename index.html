@@ -6,7 +6,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   </head>
   <body style="height: 100vh; width: 100vw">
-    <div id="loading" class="loading">Loading PDF...</div>
+    <!-- <div id="loading" class="loading">Loading PDF...</div> -->
     <div class="pdf-container" id="pdfContainer"></div>
     <!-- <embed
       src="catcv.pdf"
@@ -24,43 +24,250 @@
 </html>
 
 <script>
-  async function decryptPDF() {
-    const pass = "password";
-    const pdfContainer = document.getElementById("pdfContainer");
-    const loadingDiv = document.getElementById("loading");
-    loadingDiv.style.display = "block";
+  async function decryptPDF(encryptedBase64, password) {
     try {
-      const response = await fetch("catcv_encry.pdf");
-      console.log("response", response);
-      const encrypted_data = response.text();
-      const decrypted_data = CryptoJS.AES.decrypt(encrypted_data, pass);
-      const pdfData = decrypted_data.toString(CryptoJS.enc.Utf8);
+      // decode base 64, atob return une chaine binary, mais c'est pas du vrai tableau d'octets
+      // c'est impossible d'utiliser avec crypto
+      // Javascript a sa limitation historique, car il na pas de type natif pour les donnee binaires
+      // il faut une manipulation explicite en utilisant Unit8Array pour lire les bytes correctement
+      const encryptedBytes = atob(encryptedBase64);
+      const encryptedData = Uint8Array.from(encryptedBytes, (c) =>
+        c.charCodeAt(0)
+      );
+      const salt = encryptedData.slice(0, 16);
+      const iv = encryptedData.slice(16, 32);
+      const data = encryptedData.slice(32);
+      console.log("salt", salt);
+      console.log("iv", iv);
+      console.log("data", data);
 
-      const blob = new Blob([pdfData], { type: "application/pdf" });
-      const pdf_url = URL.createObjectURL(blob);
-      pdfContainer.innerHTML = `
-                    <embed
-                        id="pdfViewer"
-                        src="${pdf_url}"
-                        type="application/pdf"
-                        style="
-                          position: absolute;
-                          left: 0;
-                          right: 0;
-                          top: 0;
-                          bottom: 0;
-                          width: 100%;
-                          height: 100%;
-                        "
-                    />
-                `;
+      // derive key from pass
+      const keyMaterial = await window.crypto.subtle.importKey(
+        "raw",
+        new TextEncoder().encode(password), //return unit8array
+        { name: "PBKDF2" },
+        false,
+        ["deriveKey"]
+      );
+
+      const key = await window.crypto.subtle.deriveKey(
+        {
+          name: "PBKDF2",
+          salt: salt,
+          iterations: 1000000,
+          hash: "SHA-256",
+          dkLen: 32,
+        },
+        keyMaterial,
+        { name: "AES-CBC", length: 256 },
+        false,
+        ["decrypt"]
+      );
+
+      const decryptedArrayBuffer = await window.crypto.subtle.decrypt(
+        {
+          name: "AES-CBC",
+          iv: iv,
+        },
+        key,
+        data
+      );
+
+      let unpaddedData;
+
+      // Strategy 1: Standard PKCS#7 padding
+      try {
+        const paddingLength =
+          decryptedArrayBuffer[decryptedArrayBuffer.length - 1];
+
+        if (paddingLength > 0 && paddingLength <= 16) {
+          // Verify padding bytes
+          let validPadding = true;
+          console.log("valid", validPadding);
+          for (
+            let i = decryptedArray.length - paddingLength;
+            i < decryptedArray.length;
+            i++
+          ) {
+            if (decryptedArray[i] !== paddingLength) {
+              validPadding = false;
+              console.warn(
+                `Invalid padding byte at position ${i}: ${decryptedArray[i]} (expected ${paddingLength})`
+              );
+              break;
+            }
+          }
+
+          if (validPadding) {
+            unpaddedData = decryptedArrayBuffer.slice(
+              0,
+              decryptedArrayBuffer.byteLength - paddingLength
+            );
+            console.log("Standard PKCS#7 padding removed successfully");
+          }
+        }
+      } catch (e) {
+        console.warn("Error in standard padding removal:", e);
+      }
+
+      // Strategy 2: Find EOF marker and trim
+      // if (!unpaddedData) {
+      //   try {
+      //     const dataAsString = new TextDecoder().decode(decryptedArray);
+      //     const eofIndex = dataAsString.lastIndexOf("%%EOF");
+
+      //     if (eofIndex > 0) {
+      //       // Find the next line break after EOF
+      //       const afterEofIndex = dataAsString.indexOf("\n", eofIndex);
+      //       const endIndex =
+      //         afterEofIndex > 0 ? afterEofIndex + 1 : eofIndex + 5;
+
+      //       unpaddedData = decrypted.slice(0, endIndex);
+      //       console.log(
+      //         "Used EOF marker strategy, ending at position:",
+      //         endIndex
+      //       );
+      //     }
+      //   } catch (e) {
+      //     console.warn("Error in EOF marker strategy:", e);
+      //   }
+      // }
+
+      // // Strategy 3: Look for PDF objects and xref table
+      // if (!unpaddedData) {
+      //   try {
+      //     const dataAsString = new TextDecoder().decode(decryptedArray);
+      //     const xrefIndex = dataAsString.lastIndexOf("xref");
+
+      //     if (xrefIndex > 0) {
+      //       // Find a reasonable amount of data after xref
+      //       const estimatedEnd = Math.min(
+      //         xrefIndex + 1000,
+      //         decryptedArray.length
+      //       );
+      //       unpaddedData = decrypted.slice(0, estimatedEnd);
+      //       console.log(
+      //         "Used xref table strategy, ending at position:",
+      //         estimatedEnd
+      //       );
+      //     }
+      //   } catch (e) {
+      //     console.warn("Error in xref table strategy:", e);
+      //   }
+      // }
+
+      // Fallback: If all strategies fail, use the data as is but log a warning
+      console.log("unpaddedData", unpaddedData);
+      if (!unpaddedData) {
+        console.warn(
+          "All padding removal strategies failed, using full decrypted data"
+        );
+        unpaddedData = decryptedArrayBuffer;
+      }
+
+      // Final validation check
+      const finalArray = new Uint8Array(unpaddedData);
+      console.log(
+        "Final data length after padding removal:",
+        finalArray.length
+      );
+      console.log("First 20 bytes:", Array.from(finalArray.slice(0, 20)));
+      console.log("Last 20 bytes:", Array.from(finalArray.slice(-20)));
+
+      const blob = new Blob([unpaddedData], { type: "application/pdf" });
+      return blob;
     } catch (error) {
-      console.error("Decryption error:", error);
-      showError(error.message || "Invalid password or corrupted file");
-    } finally {
-      loadingDiv.style.display = "none";
+      console.log(error.message || "Invalid password or corrupted file");
     }
   }
 
-  decryptPDF();
+  async function validateAndDownloadPDF(pdfBlob) {
+    // Check PDF header
+    const headerBytes = await pdfBlob.slice(0, 10).arrayBuffer();
+    const header = new TextDecoder().decode(new Uint8Array(headerBytes));
+
+    console.log("PDF header:", header);
+    if (!header.startsWith("%PDF-")) {
+      console.error("Invalid PDF: Missing PDF header signature");
+      alert(
+        "The decrypted file doesn't appear to be a valid PDF. Check your decryption process."
+      );
+      return false;
+    }
+
+    // Check for EOF marker (optional but good practice)
+    const tailBytes = await pdfBlob.slice(-10).arrayBuffer();
+    const tail = new TextDecoder().decode(new Uint8Array(tailBytes));
+    console.log("PDF tail:", tail);
+    if (!tail.includes("%%EOF")) {
+      console.warn("Warning: PDF may be missing proper EOF marker");
+    }
+
+    return true;
+  }
+
+  async function downloadPDFAutomatically(
+    pdfBlob,
+    filename = "decrypted_document.pdf"
+  ) {
+    const valid = await validateAndDownloadPDF(pdfBlob);
+    console.log("valie", valid);
+    if (!valid) return;
+    // Create object URL from the blob
+    const url = URL.createObjectURL(pdfBlob);
+
+    // Create a hidden anchor element
+    const a = document.createElement("a");
+    a.style.display = "none";
+    a.href = url;
+    a.download = filename;
+
+    // Append to the document and trigger click
+    document.body.appendChild(a);
+    a.click();
+
+    // Clean up
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      console.log(`PDF download initiated for ${filename}`);
+    }, 100);
+  }
+
+  async function handleEncryption() {
+    try {
+      const response = await fetch("catcv_aes.pdf");
+      const encryptedBase64 = await response.text();
+      const blob = await decryptPDF(encryptedBase64, "password");
+      // await downloadPDFAutomatically(blob);
+      const pdf_url = URL.createObjectURL(blob);
+      const pdfContainer = document.getElementById("pdfContainer");
+
+      pdfContainer.innerHTML = `
+              <embed
+                  id="pdfViewer"
+                  src=${pdf_url}
+                  type="application/pdf"
+                  style="
+                    position: absolute;
+                    left: 0;
+                    right: 0;
+                    top: 0;
+                    bottom: 0;
+                    width: 100%;
+                    height: 100%;
+                  "
+              />
+          `;
+      // Cleanup??
+      window.addEventListener("beforeunload", () => {
+        URL.revokeObjectURL(pdf_url);
+      });
+    } catch (error) {
+      console.error("Error handling encryption:", error);
+      const pdfContainer = document.getElementById("pdfContainer");
+      pdfContainer.innerHTML = `<div class="error">Error loading PDF: ${error.message}</div>`;
+    }
+  }
+  handleEncryption();
 </script>
