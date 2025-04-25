@@ -35,7 +35,7 @@ jobs:
         uses: actions/configure-pages@v5
       - name: Replace placeholders in HTML
         run: |
-          sed -i '.bak' "s|{{KEY}}|password|g" index.html
+          sed -i "s|{{KEY}}|password|g" index.html
           echo "Current KEY value: '${{ secrets.KEY }} pass'"  # For debugging
           cat index.html
       - name: Upload artifact
