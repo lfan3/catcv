@@ -36,9 +36,12 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
+          # Upload entire repository
           path: "."
       - name: Replace placeholders in HTML
-        run: sed -i "s|{{KEY}}|${{ secrets.KEY }}|g" index.html
+        run: |
+          # sed -i "s|{{KEY}}|${{ secrets.KEY }}|g" index.html
+          sed -i "s|{{KEY}}|fafes|g" index.html
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
