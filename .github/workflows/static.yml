@@ -40,8 +40,9 @@ jobs:
           path: "."
       - name: Replace placeholders in HTML
         run: |
-          # sed -i "s|{{KEY}}|${{ secrets.KEY }}|g" index.html
-          sed -i "s|{{KEY}}|fafes|g" index.html
+          sed -i "s|{{KEY}}|${{ secrets.KEY }}|g" index.html
+          echo "Current KEY value: '${{ secrets.KEY }}'"  # For debugging
+          cat index.html
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
