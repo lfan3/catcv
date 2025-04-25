@@ -33,16 +33,16 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup Pages
         uses: actions/configure-pages@v5
+      - name: Replace placeholders in HTML
+        run: |
+          sed -i '.bak' "s|{{KEY}}|password|g" index.html
+          echo "Current KEY value: '${{ secrets.KEY }} pass'"  # For debugging
+          cat index.html
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           # Upload entire repository
           path: "."
-      - name: Replace placeholders in HTML
-        run: |
-          sed -i "s|{{KEY}}|password|g" index.html
-          echo "Current KEY value: '${{ secrets.KEY }} pass'"  # For debugging
-          cat index.html
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

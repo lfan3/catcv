@@ -7,7 +7,7 @@
   </head>
   <body style="height: 100vh; width: 100vw">
     <div class="pdf-container" id="pdfContainer"></div>
-    <div>{{KEY}}</div>
+    <div>{{KEY}} | {{KEY}}</div>
   </body>
 </html>
 
@@ -225,7 +225,7 @@
     try {
       const response = await fetch("catcv_aes.pdf");
       const encryptedBase64 = await response.text();
-      const blob = await decryptPDF(encryptedBase64, "{{KEY}}");
+      const blob = await decryptPDF(encryptedBase64, "password");
 
       console.log("{{KEY}}");
       // await downloadPDFAutomatically(blob);
