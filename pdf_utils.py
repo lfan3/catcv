@@ -54,6 +54,6 @@ def dycrpt_aes(inputpath, outputpath, password):
         file.write(pdf_data)
     return "Déchiffrement réussi"
 
-# encrypt_pdf('./catcv.pdf', './catcv_encrypted.pdf','password')
-# encrypt_aes('./catcv.pdf','./catcv_aes.pdf', 'password')
-dycrpt_aes('./catcv_aes.pdf','./catcv_de.pdf', 'password')
+# encrypt_aes('./catcv.pdf', './catcv_encrypted.pdf','password')
+encrypt_aes('./catcv.pdf','./catcv_aes.pdf', 'password')
+# dycrpt_aes('./catcv_aes.pdf','./catcv_de.pdf', 'password')
