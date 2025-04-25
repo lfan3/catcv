@@ -225,7 +225,7 @@
     try {
       const response = await fetch("catcv_aes.pdf");
       const encryptedBase64 = await response.text();
-      const passEle = Document.getElementById("pass");
+      const passEle = document.getElementById("pass");
       const pass = passEle.textContent;
       console.log(pass, "pass");
 
