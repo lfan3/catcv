@@ -181,7 +181,6 @@
       );
       return false;
     }
-
     // Check for EOF marker (optional but good practice)
     const tailBytes = await pdfBlob.slice(-10).arrayBuffer();
     const tail = new TextDecoder().decode(new Uint8Array(tailBytes));
@@ -225,7 +224,9 @@
     try {
       const response = await fetch("catcv_aes.pdf");
       const encryptedBase64 = await response.text();
-      const blob = await decryptPDF(encryptedBase64, "password");
+      const blob = await decryptPDF(encryptedBase64, "{{KEY}}");
+
+      console.log("{{KEY}}");
       // await downloadPDFAutomatically(blob);
       const pdf_url = URL.createObjectURL(blob);
       const pdfContainer = document.getElementById("pdfContainer");
