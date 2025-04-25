@@ -4,6 +4,7 @@ from Crypto.Random import get_random_bytes
 from Crypto.Protocol.KDF import PBKDF2
 from Crypto.Hash import SHA256
 import base64
+import segno
 
 
 def encrypt_aes(inputpath, outputpath, password):
@@ -55,5 +56,9 @@ def dycrpt_aes(inputpath, outputpath, password):
     return "Déchiffrement réussi"
 
 # encrypt_aes('./catcv.pdf', './catcv_encrypted.pdf','password')
-encrypt_aes('./catcv.pdf','./catcv_aes.pdf', 'password')
+# encrypt_aes('./catcv.pdf','./catcv_aes.pdf', 'password')
 # dycrpt_aes('./catcv_aes.pdf','./catcv_de.pdf', 'password')
+
+def qr_maker(link, filename):
+    qr = segno.make(link)
+    qr.save(filename)
