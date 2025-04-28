@@ -222,7 +222,7 @@
 
   async function handleEncryption() {
     try {
-      const response = await fetch("catcv_aes.pdf");
+      const response = await fetch("catcv_aes_v2.pdf");
       const encryptedBase64 = await response.text();
 
       const blob = await decryptPDF(encryptedBase64, "password");
